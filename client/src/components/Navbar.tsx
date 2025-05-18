@@ -5,14 +5,14 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-sm mb-4">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <span className="text-lg font-semibold">Multi-Agent System</span>
             </div>
             <div className="ml-6 flex space-x-4 items-center">
-              {/* Fixed: Use divs with onClick for navigation instead of Link component */}
+              {/* Navigation items */}
               <div 
                 onClick={() => navigate("/")}
                 className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
@@ -22,6 +22,11 @@ export default function Navbar() {
                 onClick={() => navigate("/org-chart")}
                 className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/org-chart" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
                 Organization Chart
+              </div>
+              <div 
+                onClick={() => navigate("/mission-dashboard")}
+                className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/mission-dashboard" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                Mission Dashboard
               </div>
             </div>
           </div>

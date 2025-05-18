@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import ChatUI from "@/pages/ChatUI";
 import OrgChart from "@/components/OrgChart";
+import MissionDashboard from "@/pages/MissionDashboard";
 import Navbar from "@/components/Navbar";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
       {/* Add pages below */}
       <Route path="/" component={ChatUI}/>
       <Route path="/org-chart" component={OrgChart}/>
+      <Route path="/mission-dashboard" component={MissionDashboard}/>
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
