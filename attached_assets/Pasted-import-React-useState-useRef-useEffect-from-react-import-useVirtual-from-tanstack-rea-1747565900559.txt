@@ -1,0 +1,303 @@
+import React, { useState, useRef, useEffect } from 'react'
+import { useVirtual } from '@tanstack/react-virtual'
+import DOMPurify from 'dompurify'
+
+// Mock Agent avatars and colors for UI
+const agents = {
+  user: { name: 'ผู้ใช้', avatar: '👤', color: 'bg-gray-300' },
+  doctor: { name: 'Dr. Neuro', avatar: '🧠', color: 'bg-blue-400 text-white' },
+  analyst: { name: 'Cyber Analyst', avatar: '🛡️', color: 'bg-green-500 text-white' }
+}
+
+const AGENT_PROFILES = {
+  doctor: {
+    specialty: "ระบบประสาท",
+    tone: "สุภาพ เป็นกันเอง",
+    responseTime: "2-5 วินาที"
+  },
+  analyst: {
+    specialty: "ความมั่นคงไซเบอร์",
+    tone: "ตรงไปตรงมา",
+    responseTime: "1-3 วินาที"
+  }
+}
+
+// Sanitization Layer
+const cleanMessage = (content: string) => {
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br'],
+    FORBID_ATTR: ['style', 'onerror']
+  })
+}
+
+// Simulated NLP classify function for routing - in real app, replace with actual NLP call
+async function routeMessage(content: string) {
+  // Simple mock logic to classify domain
+  const lower = content.toLowerCase()
+  let topMatch = 'general'
+  let requiresMultiDomain = false
+
+  if (lower.includes('ปวดหัว') || lower.includes('เวียนหัว') || lower.includes('ระบบประสาท')) {
+    topMatch = 'medical'
+  } else if (lower.includes('hack') || lower.includes('cyber') || lower.includes('security')) {
+    topMatch = 'cybersecurity'
+  }
+
+  // Simple logic: if contains both keywords, requiresMultiDomain for demo
+  if ((lower.includes('ปวดหัว') || lower.includes('เวียนหัว')) && lower.includes('security')) {
+    requiresMultiDomain = true
+  }
+
+  const keywords = lower.split(' ').filter(w => w.length > 3).slice(0, 5)
+
+  return {
+    topMatch,
+    requiresMultiDomain,
+    keywords
+  }
+}
+
+// Mock worker simulate analyzing message asynchronously
+function fakeWorkerAnalyzeMessage({ text, context, agents }: { text: string, context: any, agents: string[] }) {
+  return new Promise<{ responses: any[] }>((resolve) => {
+    setTimeout(() => {
+      // Generate responses from primary and secondary agents
+      const responses = []
+
+      // For demo, assign doctor if medical keyword present
+      if (text.includes('ปวดหัว') || text.includes('เวียนหัว')) {
+        responses.push({
+          role: 'doctor',
+          content: 'ตามที่คุณแจ้งมา อาการน่าจะเกี่ยวกับระบบประสาท ขอแนะนำให้พบแพทย์เพื่อประเมินเพิ่มเติม',
+          status: 'verified',
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      // Add analyst response if cybersecurity keyword
+      if (text.toLowerCase().includes('security') || text.toLowerCase().includes('hack')) {
+        responses.push({
+          role: 'analyst',
+          content: 'การรักษาความปลอดภัยไซเบอร์เป็นเรื่องสำคัญ ควรตรวจสอบระบบและปรับปรุงมาตรการป้องกัน',
+          status: 'verified',
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      // If no domain matched, simple general response
+      if (responses.length === 0) {
+        responses.push({
+          role: 'analyst',
+          content: 'ขอบคุณที่ติดต่อมา เราจะตอบกลับโดยเร็วที่สุด',
+          status: 'processing',
+          timestamp: new Date().toISOString()
+        })
+      }
+
+      resolve({ responses })
+    }, 1000) // simulate delay
+  })
+}
+
+const AgentCard = ({ active, onClick, children }: {active: boolean, onClick: () => void, children: React.ReactNode}) => (
+  <button
+    onClick={onClick}
+    className={\`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors \${active ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'}\`}
+  >
+    {children}
+  </button>
+)
+
+const Loader2 = () => (
+  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+  </svg>
+)
+
+const CheckCircle2 = () => (
+  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path d="M5 13l4 4L19 7" />
+  </svg>
+)
+
+export default function OptimizedChatUI() {
+  const [messages, setMessages] = useState<Array<any>>([])
+  const [input, setInput] = useState('')
+  const [activeAgent, setActiveAgent] = useState<string | null>(null)
+  const [activeTyping, setActiveTyping] = useState<Record<string, boolean>>({})
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  // Virtualizer setup
+  const virtualizer = useVirtual({
+    size: messages.length,
+    parentRef,
+    estimateSize: () => 85,
+    overscan: 5
+  })
+
+  // Analytics tracking (simple)
+  const analytics = useRef({
+    responseTimes: {
+      doctor: [],
+      analyst: []
+    },
+    messageLengths: {
+      user: 0,
+      doctor: 0,
+      analyst: 0
+    },
+    satisfactionRatings: []
+  })
+
+  // Track interaction helper
+  function trackInteraction(message: any) {
+    analytics.current.messageLengths[message.role] += message.content.length
+    // In production, send analytics event to server here if needed
+  }
+
+  // Handle sending message
+  const handleSend = async () => {
+    if (!input.trim()) return
+    const cleaned = cleanMessage(input)
+    const newUserMessage = {
+      role: 'user',
+      content: cleaned,
+      status: 'verified',
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, newUserMessage])
+    trackInteraction(newUserMessage)
+    setInput('')
+
+    // Show typing indicators for all agents during processing
+    const agentKeys = Object.keys(AGENT_PROFILES)
+    setActiveTyping(agentKeys.reduce((acc, a) => ({ ...acc, [a]: true }), {}))
+
+    // Use routeMessage to classify
+    const analysis = await routeMessage(cleaned)
+
+    // Simulate worker analysis
+    const workerResult = await fakeWorkerAnalyzeMessage({
+      text: cleaned,
+      context: {}, // Could pass context data here
+      agents: agentKeys
+    })
+
+    // Hide typing indicators
+    setActiveTyping({})
+
+    // Append responses from agents
+    setMessages(prev => [...prev, ...workerResult.responses])
+
+    // Track analytics for responses
+    workerResult.responses.forEach(trackInteraction)
+  }
+
+  return (
+    <div className="flex flex-col max-w-4xl mx-auto p-4 h-screen gap-4">
+      {/* Interactive Agent Cards */}
+      <div className="flex gap-2 mb-4">
+        {Object.entries(agents).filter(([id]) => id !== 'user').map(([id, agent]) => (
+          <AgentCard
+            key={id}
+            active={activeAgent === id}
+            onClick={() => setActiveAgent(id)}
+          >
+            <div className={\`p-2 rounded-full \${agent.color}\`}>
+              {agent.avatar}
+            </div>
+            <div className="text-sm font-medium">{agent.name}</div>
+          </AgentCard>
+        ))}
+      </div>
+
+      {/* Message list */}
+      <div ref={parentRef} className="h-[400px] overflow-auto relative border rounded-lg bg-white shadow-inner">
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map(virtualRow => {
+            const msg = messages[virtualRow.index]
+            const agent = agents[msg.role] || agents.user
+
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: \`\${virtualRow.size}px\`,
+                  transform: \`translateY(\${virtualRow.start}px)\`
+                }}
+                className="px-3"
+              >
+                {/* Message container */}
+                <div className={\`flex gap-3 p-3 rounded-lg \${agent.color} hover:shadow-lg max-w-3xl relative\`}>
+                  <div className="text-2xl select-none">{agent.avatar}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex gap-2 items-baseline">
+                      <span className="font-semibold">{agent.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {AGENT_PROFILES[msg.role]?.specialty || ''}
+                      </span>
+                    </div>
+                    <div className="mt-1 whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: msg.content }}></div>
+                  </div>
+                  {/* Message Status Badge */}
+                  <div className="absolute right-2 top-2 flex gap-1 items-center">
+                    {msg.status === 'processing' && (
+                      <span className="bg-gray-300 text-gray-700 text-xs px-1 rounded flex items-center gap-1">
+                        <Loader2 /> กำลังประมวลผล
+                      </span>
+                    )}
+                    {msg.status === 'verified' && (
+                      <span className="bg-green-200 text-green-800 text-xs px-1 rounded flex items-center gap-1">
+                        <CheckCircle2 /> ยืนยันแล้ว
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Typing indicators */}
+      {messages.length > 0 && messages[messages.length -1]?.role !== 'user' && (
+        <div className="flex gap-2 p-2">
+          {Object.keys(activeTyping).map(agentId => (
+            activeTyping[agentId] && (
+              <div key={agentId} className="flex items-center gap-1 text-sm">
+                <span className={\`\${agents[agentId].color} px-1 rounded\`}>{agents[agentId].avatar}</span>
+                <span className="text-muted-foreground">กำลังพิมพ์...</span>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Input area */}
+      <form onSubmit={e => { e.preventDefault(); handleSend() }} className="flex gap-2">
+        <input
+          type="text"
+          className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="พิมพ์ข้อความที่นี่..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          aria-label="กรอกข้อความ"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition-colors"
+          disabled={!input.trim()}
+        >
+          ส่ง
+        </button>
+      </form>
+    </div>
+  )
+}
+
+
