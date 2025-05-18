@@ -13,14 +13,14 @@ export default function Navbar() {
             </div>
             <div className="ml-6 flex space-x-4 items-center">
               <Link href="/">
-                <a className={`px-3 py-2 rounded-md text-sm font-medium ${location === "/" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                <span className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
                   Chat UI
-                </a>
+                </span>
               </Link>
               <Link href="/org-chart">
-                <a className={`px-3 py-2 rounded-md text-sm font-medium ${location === "/org-chart" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                <span className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/org-chart" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
                   Organization Chart
-                </a>
+                </span>
               </Link>
             </div>
           </div>
