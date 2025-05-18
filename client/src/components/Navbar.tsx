@@ -1,7 +1,7 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 export default function Navbar() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   return (
     <nav className="bg-white shadow-sm mb-4">
@@ -12,17 +12,17 @@ export default function Navbar() {
               <span className="text-lg font-semibold">Multi-Agent System</span>
             </div>
             <div className="ml-6 flex space-x-4 items-center">
-              {/* Fix: Use div instead of spans inside Link to avoid nested <a> tags */}
-              <Link href="/">
-                <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-                  Chat UI
-                </div>
-              </Link>
-              <Link href="/org-chart">
-                <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/org-chart" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
-                  Organization Chart
-                </div>
-              </Link>
+              {/* Fixed: Use divs with onClick for navigation instead of Link component */}
+              <div 
+                onClick={() => navigate("/")}
+                className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                Chat UI
+              </div>
+              <div 
+                onClick={() => navigate("/org-chart")}
+                className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/org-chart" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                Organization Chart
+              </div>
             </div>
           </div>
         </div>
