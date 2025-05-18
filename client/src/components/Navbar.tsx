@@ -28,6 +28,11 @@ export default function Navbar() {
                 className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/mission-dashboard" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
                 Mission Dashboard
               </div>
+              <div 
+                onClick={() => navigate("/strategy-recommender")}
+                className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${location === "/strategy-recommender" ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>
+                Strategy AI
+              </div>
             </div>
           </div>
         </div>

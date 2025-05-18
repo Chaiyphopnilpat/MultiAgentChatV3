@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import ChatUI from "@/pages/ChatUI";
 import OrgChart from "@/components/OrgChart";
 import MissionDashboard from "@/pages/MissionDashboard";
+import StrategyRecommender from "@/pages/StrategyRecommender";
 import Navbar from "@/components/Navbar";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={ChatUI}/>
       <Route path="/org-chart" component={OrgChart}/>
       <Route path="/mission-dashboard" component={MissionDashboard}/>
+      <Route path="/strategy-recommender" component={StrategyRecommender}/>
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
