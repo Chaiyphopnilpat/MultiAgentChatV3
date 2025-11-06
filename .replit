@@ -12,6 +12,11 @@ run = ["npm", "run", "start"]
 
 [[ports]]
 localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 38523
+externalPort = 3001
 
 [workflows]
 runButton = "Project"
@@ -28,11 +33,11 @@ args = "Start application"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
+task = "packager.installForLanguage"
+args = "nodejs"
 
 [agent]
 integrations = ["javascript_openai==1.0.0"]
